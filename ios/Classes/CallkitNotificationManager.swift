@@ -5,6 +5,9 @@
 //  Created by Hien Nguyen on 2/8/25.
 //
 
+import UIKit
+import UserNotifications
+
 public class CallkitNotificationManager: NSObject {
     
     public static let MISSED_CALL_CATEGORY = "MISSED_CALL_CATEGORY"
@@ -43,6 +46,20 @@ public class CallkitNotificationManager: NSObject {
     }
     
     
+    /// Presents an alert on the key window's root view controller.
+    /// Uses the UIWindowScene API (iOS 13+) to avoid the deprecated `keyWindow`.
+    private func presentAlert(_ alert: UIAlertController) {
+        if #available(iOS 13.0, *) {
+            let windowScene = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .first { $0.activationState == .foregroundActive }
+                ?? UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+            windowScene?.windows.first { $0.isKeyWindow }?.rootViewController?.present(alert, animated: true)
+        } else {
+            UIApplication.shared.keyWindow?.rootViewController?.present(alert, animated: true)
+        }
+    }
+
     public func requestNotificationPermission(_ map: [String: Any]){
         self.dataNotificationPermission = map
         let center = UNUserNotificationCenter.current()
@@ -63,7 +80,7 @@ public class CallkitNotificationManager: NSObject {
                             }
                         }
                     })
-                    UIApplication.shared.keyWindow?.rootViewController?.present(alert, animated: true)
+                    self.presentAlert(alert)
                 }
                 
             case .denied:
@@ -78,7 +95,7 @@ public class CallkitNotificationManager: NSObject {
                             UIApplication.shared.open(settingsUrl)
                         }
                     })
-                    UIApplication.shared.keyWindow?.rootViewController?.present(alert, animated: true)
+                    self.presentAlert(alert)
                 }
                 
             case .authorized, .provisional, .ephemeral:

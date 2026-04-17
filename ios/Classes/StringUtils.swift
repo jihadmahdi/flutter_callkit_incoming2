@@ -47,19 +47,22 @@ extension String {
     }
     
     public func getDecryptHandle() -> [String: Any] {
-        if (!self.isBase64Encoded()) {
-            var map: [String: Any] = [:]
-            map["handle"] = self
-            return map
+        if !self.isBase64Encoded() {
+            return ["handle": self]
         }
-        if let data = self.decryptHandle().data(using: .utf8) {
-            do {
-                return try (JSONSerialization.jsonObject(with: data, options: []) as? [String: Any])!
-            } catch {
-                print(error.localizedDescription)
+        guard let data = self.decryptHandle().data(using: .utf8) else {
+            return ["handle": self]
+        }
+        do {
+            // Bug fix: force-unwrap would crash if JSON is valid but not a dictionary.
+            guard let result = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
+                return ["handle": self]
             }
+            return result
+        } catch {
+            print("getDecryptHandle JSON parse error: \(error.localizedDescription)")
+            return ["handle": self]
         }
-        return [:]
     }
     
     public func getHandleType() -> String {

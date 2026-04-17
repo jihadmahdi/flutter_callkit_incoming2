@@ -64,18 +64,13 @@ class CallManager: NSObject {
     }
     
     func connectedCall(call: Call) {
-        let callItem = self.callWithUUID(uuid: call.uuid)
-        callItem?.connectedCall(completion: nil)
-        
-        let answerAction = CXAnswerCallAction(call: call.uuid)        
-        let transaction = CXTransaction(action: answerAction)
-
-        callController.request(transaction) { error in
-            if let error = error {
-                print("Error answering call: \(error.localizedDescription)")
-            } else {
-                // Call successfully answered
-            }
+        guard let callItem = self.callWithUUID(uuid: call.uuid) else { return }
+        callItem.connectedCall(completion: nil)
+        // Report outgoing calls as connected via the provider; incoming calls are
+        // already handled by the CXAnswerCallAction delegate – sending a new
+        // CXAnswerCallAction here would double-fire the accept event.
+        if callItem.isOutGoing {
+            sharedProvider?.reportOutgoingCall(with: call.uuid, connectedAt: Date())
         }
     }
     
@@ -111,7 +106,8 @@ class CallManager: NSObject {
         let handleCall = CXSetHeldCallAction(call: call.uuid, onHold: onHold)
         let callTransaction = CXTransaction()
         callTransaction.addAction(handleCall)
-        //requestCall
+        // Bug fix: transaction was built but never requested
+        self.requestCall(callTransaction, action: "holdCall")
     }
     
     

@@ -18,7 +18,7 @@ Flutter Callkit Incoming
   s.dependency 'CryptoSwift'
   s.platform = :ios, '10.0'
 
-  # Flutter.framework does not contain a i386 slice.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
+  # Remove VALID_ARCHS restriction so the plugin builds on both Intel and Apple Silicon simulators.
+  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
   s.swift_version = '5.0'
 end

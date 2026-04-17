@@ -146,12 +146,15 @@ class FlutterCallkitIncoming {
   }
 
   static CallEvent? _receiveCallEvent(dynamic data) {
-    Event? event;
-    Map<String, dynamic> body = {};
-
     if (data is Map) {
-      event = Event.values.firstWhere((e) => e.name == data['event']);
-      body = Map<String, dynamic>.from(data['body']);
+      // firstWhere without orElse throws StateError on unknown events (e.g. from a
+      // newer native SDK). Fall back to actionCallCustom so listeners are notified
+      // instead of crashing.
+      final event = Event.values.firstWhere(
+        (e) => e.name == data['event'],
+        orElse: () => Event.actionCallCustom,
+      );
+      final body = Map<String, dynamic>.from(data['body'] as Map? ?? {});
       return CallEvent(body, event);
     }
     return null;

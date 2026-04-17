@@ -280,13 +280,16 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
         
         initCallkitProvider(data)
         
-        let uuid = UUID(uuidString: data.uuid)
+        guard let uuid = UUID(uuidString: data.uuid) else {
+            print("FlutterCallkitIncoming: invalid UUID string '\(data.uuid)'")
+            return
+        }
         
         self.configureAudioSession()
-        self.sharedProvider?.reportNewIncomingCall(with: uuid!, update: callUpdate) { error in
-            if(error == nil) {
+        self.sharedProvider?.reportNewIncomingCall(with: uuid, update: callUpdate) { error in
+            if error == nil {
                 self.configureAudioSession()
-                let call = Call(uuid: uuid!, data: data)
+                let call = Call(uuid: uuid, data: data)
                 call.handle = data.handle
                 self.callManager.addCall(call)
                 self.sendEvent(SwiftFlutterCallkitIncomingPlugin.ACTION_CALL_INCOMING, data.toJSON())
@@ -319,12 +322,16 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
         
         initCallkitProvider(data)
         
-        let uuid = UUID(uuidString: data.uuid)
+        guard let uuid = UUID(uuidString: data.uuid) else {
+            print("FlutterCallkitIncoming: invalid UUID string '\(data.uuid)'")
+            completion()
+            return
+        }
         
-        self.sharedProvider?.reportNewIncomingCall(with: uuid!, update: callUpdate) { error in
-            if(error == nil) {
+        self.sharedProvider?.reportNewIncomingCall(with: uuid, update: callUpdate) { error in
+            if error == nil {
                 self.configureAudioSession()
-                let call = Call(uuid: uuid!, data: data)
+                let call = Call(uuid: uuid, data: data)
                 call.handle = data.handle
                 self.callManager.addCall(call)
                 self.sendEvent(SwiftFlutterCallkitIncomingPlugin.ACTION_CALL_INCOMING, data.toJSON())
@@ -362,7 +369,8 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
             return
         }
         if call.isOnHold == onHold {
-            self.sendMuteEvent(callId.uuidString,  onHold)
+            // Already in the requested hold state – re-send the hold event (not the mute event)
+            self.sendHoldEvent(callId.uuidString, onHold)
         } else {
             self.callManager.holdCall(call: call, onHold: onHold)
         }
@@ -461,15 +469,24 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
     }
     
     func initCallkitProvider(_ data: Data) {
-        if(self.sharedProvider == nil){
+        if self.sharedProvider == nil {
             self.sharedProvider = CXProvider(configuration: createConfiguration(data))
             self.sharedProvider?.setDelegate(self, queue: nil)
+        } else {
+            // Update configuration on each call so ringtone/icon/name changes take effect
+            self.sharedProvider?.configuration = createConfiguration(data)
         }
         self.callManager.setSharedProvider(self.sharedProvider!)
     }
     
     func createConfiguration(_ data: Data) -> CXProviderConfiguration {
-        let configuration = CXProviderConfiguration(localizedName: data.appName)
+        // CXProviderConfiguration(localizedName:) is deprecated in iOS 14+
+        let configuration: CXProviderConfiguration
+        if #available(iOS 14.0, *) {
+            configuration = CXProviderConfiguration()
+        } else {
+            configuration = CXProviderConfiguration(localizedName: data.appName)
+        }
         configuration.supportsVideo = data.supportsVideo
         configuration.maximumCallGroups = data.maximumCallGroups
         configuration.maximumCallsPerCallGroup = data.maximumCallsPerCallGroup
@@ -489,7 +506,9 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
                 print("Unable to load icon \(data.iconName).");
             }
         }
-        if !data.ringtonePath.isEmpty || data.ringtonePath != "system_ringtone_default"  {
+        // Bug fix: was || (OR) which made the condition always true for empty or default values.
+        // Must be && (AND): only set a custom ringtone when the path is non-empty AND not the sentinel value.
+        if !data.ringtonePath.isEmpty && data.ringtonePath != "system_ringtone_default" {
             configuration.ringtoneSound = data.ringtonePath
         }
         return configuration
@@ -594,9 +613,8 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
         }
 
 
-        call.hasConnectDidChange = { [weak self] in
-            self?.sharedProvider?.reportOutgoingCall(with: call.uuid, connectedAt: call.connectedData)
-        }
+        // Note: reportOutgoingCall is only for outgoing calls; incoming answers
+        // are fulfilled through the CXAnswerCallAction delegate alone.
         self.data?.isAccepted = true
         self.answerCall = call
         sendEvent(SwiftFlutterCallkitIncomingPlugin.ACTION_CALL_ACCEPT, self.data?.toJSON())
@@ -639,8 +657,9 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
             } else {
                 action.fulfill()
             }
-        }else {
+        } else {
             self.answerCall = nil
+            self.outgoingCall = nil  // Bug fix: outgoingCall was never cleared, breaking subsequent timeout detection
             sendEvent(SwiftFlutterCallkitIncomingPlugin.ACTION_CALL_ENDED, call.data.toJSON())
             if let appDelegate = UIApplication.shared.delegate as? CallkitIncomingAppDelegate {
                 appDelegate.onEnd(call, action)
