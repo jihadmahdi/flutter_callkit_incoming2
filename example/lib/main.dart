@@ -10,7 +10,7 @@ import 'package:flutter_callkit_incoming_example/navigation_service.dart';
 import 'package:uuid/uuid.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print("Handling a background message: ${message.messageId}");
+  debugPrint("Handling a background message: ${message.messageId}");
   await Firebase.initializeApp(); //make sure firebase is initialized before using it (showCallkitIncoming)
   showCallkitIncoming(const Uuid().v4());
 }
@@ -99,8 +99,8 @@ class MyAppState extends State<MyApp> with WidgetsBindingObserver {
     var calls = await FlutterCallkitIncoming.activeCalls();
     if (calls is List) {
       if (calls.isNotEmpty) {
-        print('DATA: $calls');
-        if(calls[0]['id'] != null && calls[0]['isAccepted'] == true) {
+        debugPrint('DATA: $calls');
+        if (calls[0]['id'] != null && calls[0]['isAccepted'] == true) {
           _currentUuid = calls[0]['id'];
           return calls[0];
         } else {
@@ -123,7 +123,7 @@ class MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
-    print(state);
+    debugPrint('$state');
     if (state == AppLifecycleState.resumed) {
       //Check call when open app from background
       checkAndNavigationCallingPage();
@@ -141,12 +141,13 @@ class MyAppState extends State<MyApp> with WidgetsBindingObserver {
     _firebaseMessaging = FirebaseMessaging.instance;
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      print('Message title: ${message.notification?.title}, body: ${message.notification?.body}, data: ${message.data}');
+      debugPrint(
+          'Message title: ${message.notification?.title}, body: ${message.notification?.body}, data: ${message.data}');
       _currentUuid = _uuid.v4();
       showCallkitIncoming(_currentUuid!);
     });
     _firebaseMessaging.getToken().then((token) {
-      print('Device Token FCM: $token');
+      debugPrint('Device Token FCM: $token');
     });
   }
 
@@ -163,6 +164,6 @@ class MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   Future<void> getDevicePushTokenVoIP() async {
     var devicePushTokenVoIP = await FlutterCallkitIncoming.getDevicePushTokenVoIP();
-    print(devicePushTokenVoIP);
+    debugPrint('$devicePushTokenVoIP');
   }
 }

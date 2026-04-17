@@ -24,8 +24,8 @@ class NavigationService {
   /// `args` is optional data to be sent to new page
   Future<T?> pushNamed<T extends Object>(String routeName,
       {Object? args}) async {
-    print(navigationKey);
-    print(navigationKey.currentState);
+    debugPrint('$navigationKey');
+    debugPrint('${navigationKey.currentState}');
     return navigationKey.currentState?.pushNamed<T>(
       routeName,
       arguments: args,
@@ -96,8 +96,8 @@ class NavigationService {
     );
   }
 
-  /// Consults the current route's [Route.willPop] method, and acts accordingly,
-  /// potentially popping the route as a result; returns whether the pop request
+  /// Delegates to [Navigator.maybePop], which consults the current route's
+  /// pop disposition and may pop the route; returns whether the pop request
   /// should be considered handled.
   Future<bool> maybePop<T extends Object>([Object? args]) async {
     return navigationKey.currentState!.maybePop<T>(args as T);

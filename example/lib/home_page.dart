@@ -9,7 +9,7 @@ import 'package:flutter_callkit_incoming/entities/notification_params.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 import 'package:flutter_callkit_incoming_example/app_router.dart';
 import 'package:flutter_callkit_incoming_example/navigation_service.dart';
-import 'package:http/http.dart';
+import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
 class HomePage extends StatefulWidget {
@@ -119,7 +119,7 @@ class HomePageState extends State<HomePage> {
     var calls = await FlutterCallkitIncoming.activeCalls();
     if (calls is List) {
       if (calls.isNotEmpty) {
-        print('DATA: $calls');
+        debugPrint('DATA: $calls');
         _currentUuid = calls[0]['id'];
         return calls[0];
       } else {
@@ -222,7 +222,7 @@ class HomePageState extends State<HomePage> {
 
   Future<void> activeCalls() async {
     var calls = await FlutterCallkitIncoming.activeCalls();
-    print(calls);
+    debugPrint('$calls');
   }
 
   Future<void> endAllCalls() async {
@@ -232,13 +232,13 @@ class HomePageState extends State<HomePage> {
   Future<void> getDevicePushTokenVoIP() async {
     var devicePushTokenVoIP =
         await FlutterCallkitIncoming.getDevicePushTokenVoIP();
-    print(devicePushTokenVoIP);
+    debugPrint('$devicePushTokenVoIP');
   }
 
   Future<void> listenerEvent(void Function(CallEvent) callback) async {
     try {
       FlutterCallkitIncoming.onEvent.listen((event) async {
-        print('HOME: $event');
+        debugPrint('HOME: $event');
         switch (event!.event) {
           case Event.actionCallIncoming:
             // TODO: received an incoming call
@@ -296,13 +296,13 @@ class HomePageState extends State<HomePage> {
         callback(event);
       });
     } on Exception catch (e) {
-      print(e);
+      debugPrint('$e');
     }
   }
 
   //check with https://events.hiennv.com
-  Future<void> requestHttp(content) async {
-    get(Uri.parse(
+  Future<void> requestHttp(String content) async {
+    http.get(Uri.parse(
         'https://events.hiennv.com/api/logs?data=$content'));
   }
 

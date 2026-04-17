@@ -4,9 +4,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_callkit_incoming/entities/entities.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
-import 'package:flutter_callkit_incoming_example/app_router.dart';
 import 'package:flutter_callkit_incoming_example/navigation_service.dart';
-import 'package:http/http.dart';
+import 'package:http/http.dart' as http;
 
 class CallingPage extends StatefulWidget {
   const CallingPage({super.key});
@@ -52,7 +51,7 @@ class CallingPageState extends State<CallingPage> {
   Widget build(BuildContext context) {
     final params = jsonDecode(jsonEncode(
         ModalRoute.of(context)!.settings.arguments as Map<dynamic, dynamic>));
-    print(ModalRoute.of(context)!.settings.arguments);
+    debugPrint('${ModalRoute.of(context)!.settings.arguments}');
     calling = CallKitParams.fromJson(params);
 
     var timeDisplay = intToTimeLeft(_start);
@@ -71,7 +70,7 @@ class CallingPageState extends State<CallingPage> {
               TextButton(
                 style: ButtonStyle(
                   foregroundColor:
-                      MaterialStateProperty.all<Color>(Colors.blue),
+                      WidgetStateProperty.all<Color>(Colors.blue),
                 ),
                 onPressed: () async {
                   if (calling != null) {
@@ -84,7 +83,7 @@ class CallingPageState extends State<CallingPage> {
               TextButton(
                 style: ButtonStyle(
                   foregroundColor:
-                      MaterialStateProperty.all<Color>(Colors.blue),
+                      WidgetStateProperty.all<Color>(Colors.blue),
                 ),
                 onPressed: () async {
                   if (calling != null) {
@@ -104,17 +103,17 @@ class CallingPageState extends State<CallingPage> {
   }
 
 
-  Future<void> makeFakeConnectedCall(id) async {
+  Future<void> makeFakeConnectedCall(String id) async {
     await FlutterCallkitIncoming.setCallConnected(id);
   }
 
-  Future<void> makeEndCall(id) async {
+  Future<void> makeEndCall(String id) async {
     await FlutterCallkitIncoming.endCall(id);
   }
 
   //check with https://webhook.site/#!/2748bc41-8599-4093-b8ad-93fd328f1cd2
-  Future<void> requestHttp(content) async {
-    get(Uri.parse(
+  Future<void> requestHttp(String content) async {
+    http.get(Uri.parse(
         'https://webhook.site/2748bc41-8599-4093-b8ad-93fd328f1cd2?data=$content'));
   }
 
