@@ -607,14 +607,16 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
             action.fail()
             return
         }
-        self.configureAudioSession()
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(1200)) {
+        
+        // When configureAudioSession is false the call is alert-only (no real voice connection).
+        // Skip audio setup entirely in that case.
+        if data?.configureAudioSession != false {
             self.configureAudioSession()
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(1200)) {
+                self.configureAudioSession()
+            }
         }
 
-
-        // Note: reportOutgoingCall is only for outgoing calls; incoming answers
-        // are fulfilled through the CXAnswerCallAction delegate alone.
         self.data?.isAccepted = true
         self.answerCall = call
         sendEvent(SwiftFlutterCallkitIncomingPlugin.ACTION_CALL_ACCEPT, self.data?.toJSON())
@@ -622,6 +624,11 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
             appDelegate.onAccept(call, action)
         }else {
             action.fulfill()
+            // Alert-only mode: immediately end the call so CallKit never shows
+            // the connected in-call screen or tries to activate an audio route.
+            if data?.configureAudioSession == false {
+                self.callManager.endCall(call: call)
+            }
         }
     }
     

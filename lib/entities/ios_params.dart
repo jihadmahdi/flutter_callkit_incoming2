@@ -23,6 +23,10 @@ class IOSParams {
   final bool? supportsGrouping;
   final bool? supportsUngrouping;
 
+  /// Whether to include this call in the iOS Phone app's Recents list.
+  /// Set to false when CallKit is used purely as a UI alert (not a real voice call).
+  final bool? includesCallsInRecents;
+
   /// Add file to root project xcode /ios/Runner/Ringtone.caf and Copy Bundle Resources(Build Phases) -> value: "Ringtone.caf"
   final String? ringtonePath;
 
@@ -41,6 +45,7 @@ class IOSParams {
     this.supportsHolding,
     this.supportsGrouping,
     this.supportsUngrouping,
+    this.includesCallsInRecents,
     this.ringtonePath,
   });
 
